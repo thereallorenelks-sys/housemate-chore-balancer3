@@ -3,6 +3,6 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  // Vercel uses "/" — GitHub Pages serves from "/<repo>/"
+  // GitHub Pages serves from /<repo>/ — Vercel serves from /
   base: process.env.GITHUB_PAGES ? '/housemate-chore-balancer3/' : '/',
 })
