@@ -68,7 +68,6 @@ function App() {
   const [chores, setChores] = useState(REAL_CHORES);
   const [cycleWeeks] = useState(4);
 
-  // 🧮 Generate assignments
   function generateAssignments() {
     const weeks = Array.from({ length: cycleWeeks }, (_, i) => ({
       week: i + 1,
