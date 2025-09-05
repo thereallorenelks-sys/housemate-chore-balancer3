@@ -202,4 +202,5 @@ function ChoreForm({ onAdd }: { onAdd: (c: Chore) => void }) {
   );
 }
 
+
 export default App;
