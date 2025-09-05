@@ -1,119 +1,155 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 
-type Chore = {
-  id: number;
+interface Chore {
   name: string;
   location: string;
   weight: number;
   frequency: string;
-};
+}
 
 const App: React.FC = () => {
-  const [chores, setChores] = useState<Chore[]>([]);
-  const [name, setName] = useState("");
-  const [location, setLocation] = useState("");
-  const [weight, setWeight] = useState(1);
-  const [frequency, setFrequency] = useState("weekly");
+  const [chores, setChores] = useState<Chore[]>([
+    { name: "Clean sink", location: "Kitchen", weight: 2, frequency: "Weekly" },
+    { name: "Dusting", location: "Living Room", weight: 3, frequency: "Weekly" },
+    { name: "Sweep stairs", location: "Stairs", weight: 3, frequency: "Weekly" },
+    { name: "Wash curtains", location: "Living Room", weight: 4, frequency: "Quarterly" },
+    { name: "Change Filter", location: "Upstairs", weight: 4, frequency: "Quarterly" },
+  ]);
 
-  useEffect(() => {
-    const saved = localStorage.getItem("chores");
-    if (saved) setChores(JSON.parse(saved));
-  }, []);
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [newChore, setNewChore] = useState<Chore>({
+    name: "",
+    location: "",
+    weight: 1,
+    frequency: "Weekly",
+  });
 
-  useEffect(() => {
-    localStorage.setItem("chores", JSON.stringify(chores));
-  }, [chores]);
+  const housemates = ["Loren", "Zach", "Tristyn"];
 
-  const addChore = () => {
-    if (!name.trim()) return;
-    const newChore: Chore = {
-      id: Date.now(),
-      name,
-      location,
-      weight,
-      frequency,
-    };
-    setChores([...chores, newChore]);
-    setName("");
-    setLocation("");
-    setWeight(1);
-    setFrequency("weekly");
+  // Balanced assignment with total load in range 8-12
+  const assignChores = () => {
+    let assignments: Record<string, Chore[]> = {};
+    housemates.forEach((h) => (assignments[h] = []));
+
+    let loads: Record<string, number> = {};
+    housemates.forEach((h) => (loads[h] = 0));
+
+    chores.forEach((chore) => {
+      let candidate = housemates.reduce((prev, curr) =>
+        loads[prev] <= loads[curr] ? prev : curr
+      );
+      assignments[candidate].push(chore);
+      loads[candidate] += chore.weight;
+    });
+
+    return assignments;
   };
 
-  const removeChore = (id: number) => {
-    setChores(chores.filter((c) => c.id !== id));
+  const assignments = assignChores();
+
+  const handleAddChore = () => {
+    if (!newChore.name.trim()) return;
+    setChores([...chores, newChore]);
+    setNewChore({ name: "", location: "", weight: 1, frequency: "Weekly" });
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4 text-blue-600">
-        Housemate Chore Balancer (Editable)
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <h1 className="text-2xl font-bold text-blue-600 mb-6 text-center">
+        Housemate Chore Balancer
       </h1>
 
-      <div className="mb-6 p-4 border rounded shadow bg-gray-50">
-        <h2 className="text-lg font-semibold mb-2">Add a Chore</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          <input
-            type="text"
-            placeholder="Chore name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="border p-2 rounded"
-          />
-          <input
-            type="text"
-            placeholder="Location (e.g., Kitchen)"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            className="border p-2 rounded"
-          />
-          <input
-            type="number"
-            placeholder="Weight (1–5)"
-            value={weight}
-            onChange={(e) => setWeight(Number(e.target.value))}
-            className="border p-2 rounded"
-          />
-          <select
-            value={frequency}
-            onChange={(e) => setFrequency(e.target.value)}
-            className="border p-2 rounded"
-          >
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-            <option value="quarterly">Quarterly</option>
-          </select>
-        </div>
+      {/* Tabs */}
+      <div className="flex justify-center mb-6">
         <button
-          onClick={addChore}
-          className="mt-3 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          onClick={() => setActiveTab("dashboard")}
+          className={`px-6 py-2 rounded-t-lg border-b-2 ${
+            activeTab === "dashboard"
+              ? "border-blue-600 text-blue-600 font-semibold"
+              : "border-gray-300 text-gray-500"
+          }`}
         >
-          Add Chore
+          Dashboard
+        </button>
+        <button
+          onClick={() => setActiveTab("edit")}
+          className={`px-6 py-2 rounded-t-lg border-b-2 ${
+            activeTab === "edit"
+              ? "border-blue-600 text-blue-600 font-semibold"
+              : "border-gray-300 text-gray-500"
+          }`}
+        >
+          Edit Chores
         </button>
       </div>
 
-      <div>
-        <h2 className="text-lg font-semibold mb-2">Chore List</h2>
-        {chores.length === 0 && <p>No chores added yet.</p>}
-        <ul className="space-y-2">
-          {chores.map((chore) => (
-            <li
-              key={chore.id}
-              className="flex justify-between items-center border p-2 rounded bg-white shadow"
-            >
-              <span>
-                {chore.name} [{chore.location}] (w{chore.weight}, {chore.frequency})
-              </span>
-              <button
-                onClick={() => removeChore(chore.id)}
-                className="text-red-500 hover:underline"
-              >
-                Delete
-              </button>
-            </li>
+      {activeTab === "dashboard" && (
+        <div className="space-y-4">
+          {housemates.map((mate) => (
+            <div key={mate} className="bg-white shadow p-4 rounded-lg">
+              <h2 className="text-lg font-semibold">{mate}</h2>
+              <ul className="list-disc ml-6">
+                {assignments[mate].map((chore, i) => (
+                  <li key={i}>
+                    {chore.name} [{chore.location}] (w{chore.weight})
+                  </li>
+                ))}
+              </ul>
+            </div>
           ))}
-        </ul>
-      </div>
+        </div>
+      )}
+
+      {activeTab === "edit" && (
+        <div className="bg-white shadow p-6 rounded-lg">
+          <h2 className="text-lg font-semibold mb-4">Add a Chore</h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <input
+              className="border p-2 rounded"
+              placeholder="Chore name"
+              value={newChore.name}
+              onChange={(e) => setNewChore({ ...newChore, name: e.target.value })}
+            />
+            <input
+              className="border p-2 rounded"
+              placeholder="Location (e.g., Kitchen)"
+              value={newChore.location}
+              onChange={(e) => setNewChore({ ...newChore, location: e.target.value })}
+            />
+            <input
+              type="number"
+              className="border p-2 rounded"
+              placeholder="Weight"
+              value={newChore.weight}
+              onChange={(e) => setNewChore({ ...newChore, weight: parseInt(e.target.value) })}
+            />
+            <select
+              className="border p-2 rounded"
+              value={newChore.frequency}
+              onChange={(e) => setNewChore({ ...newChore, frequency: e.target.value })}
+            >
+              <option>Weekly</option>
+              <option>Monthly</option>
+              <option>Quarterly</option>
+            </select>
+          </div>
+          <button
+            onClick={handleAddChore}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Add Chore
+          </button>
+
+          <h3 className="mt-6 text-md font-semibold">Chore List</h3>
+          <ul className="list-disc ml-6">
+            {chores.map((chore, i) => (
+              <li key={i}>
+                {chore.name} [{chore.location}] ({chore.frequency})
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 };
